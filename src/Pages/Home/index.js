@@ -71,6 +71,7 @@ export default function Home({navigation, route}) {
       setEdit('');
       return;
     }
+    console.log('test');
     if (product.productName && product.quantity) {
       db.transaction(tx => {
         tx.executeSql(
