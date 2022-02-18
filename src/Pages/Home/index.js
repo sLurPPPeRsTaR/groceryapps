@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Button, FlatList, Text, TextInput, View} from 'react-native';
 import {openDatabase} from 'react-native-sqlite-storage';
-import {log} from 'react-native-sqlite-storage/lib/sqlite.core';
 
 const db = openDatabase({
   name: 'sample',
@@ -77,9 +76,8 @@ export default function Home({navigation, route}) {
         tx.executeSql(
           `INSERT INTO grocery (productName,quantity) VALUES(?,?)`,
           [product.productName, product.quantity],
-          res => {
+          (tx, res) => {
             console.log('insert into table successfully');
-            console.log('ini respone', res);
             getDataSQLite();
             setProduct('');
           },
@@ -106,7 +104,8 @@ export default function Home({navigation, route}) {
       tx.executeSql(
         `SELECT * FROM grocery order by ID ASC`,
         [],
-        res => {
+        (tx, res) => {
+          console.log(res.rows);
           let len = res.rows.length;
           if (len > 0) {
             let result = [];
@@ -196,8 +195,9 @@ export default function Home({navigation, route}) {
           <></>
         )}
       </View>
-      <View style={{padding: 15}}>
+      <View style={{padding: 15, flex: 1}}>
         <FlatList
+          // contentContainerStyle={{paddingBottom: '100%'}}
           data={products}
           keyExtractor={item => item.id}
           renderItem={({item}) => (
@@ -205,7 +205,7 @@ export default function Home({navigation, route}) {
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-around',
-                marginVertical: 15,
+                marginVertical: 5,
                 alignItems: 'center',
                 borderWidth: 1,
                 padding: 15,
