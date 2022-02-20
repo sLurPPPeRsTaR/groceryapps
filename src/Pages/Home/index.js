@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {Button, FlatList, Text, TextInput, View} from 'react-native';
-import {openDatabase} from 'react-native-sqlite-storage';
+import SQLite from 'react-native-sqlite-storage';
 
-const db = openDatabase({
-  name: 'sample',
-  // createFromLocation: '~sample.db',
-  location: 'default',
+const db = SQLite.openDatabase({
+  name: 'samplenih',
+  createFromLocation:
+    '../../../android/app/src/main/assets/database/samplenih.sqlite',
 });
 
 export default function Home({navigation, route}) {
@@ -58,16 +58,40 @@ export default function Home({navigation, route}) {
 
   const handlerSave = () => {
     if (edit.id) {
-      let idx = products.indexOf(edit);
-      let tempEdit = {
-        id: edit.id,
-        productName: product.productName,
-        quantity: product.quantity,
-      };
-      products[idx] = tempEdit;
-      setProducts(products);
-      setProduct('');
-      setEdit('');
+      // let idx = products.indexOf(edit);
+      // let tempEdit = {
+      //   id: edit.id,
+      //   productName: product.productName,
+      //   quantity: product.quantity,
+      // };
+      // products[idx] = tempEdit;
+      // setProducts(products);
+      db.transaction(tx => {
+        tx.executeSql(
+          `UPDATE grocery SET productName=?,quantity=? WHERE ID=?`,
+          [product.productName, product.quantity, edit.id],
+          (tx, res) => {
+            // if (res.rows.length > 0) {
+            //   let result = [];
+            //   for (let i = 0; i < res.rows.length; i++) {
+            //     let item = res.rows.item(i);
+            //     result.push({
+            //       id: item.id,
+            //       productName: item.productName,
+            //       quantity: item.quantity,
+            //     });
+            //   }
+            //   setProducts(result);
+            // }
+            getDataSQLite();
+            setProduct('');
+            setEdit('');
+          },
+          error => {
+            console.log(error);
+          },
+        );
+      });
       return;
     }
 
@@ -105,11 +129,9 @@ export default function Home({navigation, route}) {
         `SELECT * FROM grocery order by ID ASC`,
         [],
         (tx, res) => {
-          console.log(res.rows);
-          let len = res.rows.length;
-          if (len > 0) {
+          if (res.rows.length > 0) {
             let result = [];
-            for (let i = 0; i < len; i++) {
+            for (let i = 0; i < res.rows.length; i++) {
               let item = res.rows.item(i);
               result.push({
                 id: item.id,
@@ -117,21 +139,40 @@ export default function Home({navigation, route}) {
                 quantity: item.quantity,
               });
             }
-            console.log(result);
             setProducts(result);
           }
         },
-        error => console.log(error.message),
+        error => console.log('cant get Data', error),
       );
     });
   };
 
   const handlerRemove = data => {
-    let copy = [...products];
-    let result = copy.filter(item => {
-      return item.id != data.id;
+    // let copy = [...products];
+    // let result = copy.filter(item => {
+    //   return item.id != data.id;
+    // });
+    // setProducts(result);
+    db.transaction(tx => {
+      tx.executeSql(
+        'DELETE FROM grocery WHERE ID=?',
+        [data.id],
+        (tx, res) => {
+          let result = [];
+          for (let i = 0; i < res.rows.length; i++) {
+            let item = res.rows.item[i];
+            result.push({
+              id: item.id,
+              productName: item.productName,
+              quantity: item.quantity,
+            });
+          }
+          setProducts(result);
+        },
+        error => console.log('delete error', error),
+      );
     });
-    setProducts(result);
+    getDataSQLite();
   };
 
   const handlerEdit = data => {
@@ -170,14 +211,12 @@ export default function Home({navigation, route}) {
         placeholder="please enter product name"
         value={product.productName}
         onChangeText={value => handlerOnChange(value, 'productName')}
-        // onChangeText={value => setProduct({...product, productName: value})}
       />
       <TextInput
         placeholder="please enter quantity of product"
         keyboardType="number-pad"
         value={product.quantity}
         onChangeText={value => handlerOnChange(value, 'quantity')}
-        // onChangeText={value => setProduct({...product, quantity: value})}
       />
       <View
         style={{
@@ -197,7 +236,6 @@ export default function Home({navigation, route}) {
       </View>
       <View style={{padding: 15, flex: 1}}>
         <FlatList
-          // contentContainerStyle={{paddingBottom: '100%'}}
           data={products}
           keyExtractor={item => item.id}
           renderItem={({item}) => (
