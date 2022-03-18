@@ -3,9 +3,7 @@ import {Button, FlatList, Text, TextInput, View} from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase({
-  name: 'samplenih',
-  createFromLocation:
-    '../../../android/app/src/main/assets/database/samplenih.sqlite',
+  name: 'sample',
 });
 
 export default function Home({navigation, route}) {
